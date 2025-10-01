@@ -16,71 +16,120 @@ namespace PruebaTecnica_SofiaRecchioni.Controllers
             _context = context;
         }
 
-        // Endpoints CRUD para Productos
         // GET: api/productos
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Producto>>> GetProductos()
         {
-            return await _context.Productos.ToListAsync();
+            try
+            {
+                return Ok(await _context.Productos.ToListAsync());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al obtener productos: {ex.Message}");
+            }
         }
 
-        // GET: api/productos/
+        // GET: api/productos/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<Producto>> GetProducto(int id)
         {
-            var producto = await _context.Productos.FindAsync(id);
+            try
+            {
+                var producto = await _context.Productos.FindAsync(id);
 
-            if (producto == null)
-                return NotFound();
+                if (producto == null)
+                    return NotFound($"No se encontró un producto con Id {id}");
 
-            return producto;
+                return Ok(producto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al obtener el producto: {ex.Message}");
+            }
         }
 
-        // POST: api/productos/
+        // POST: api/productos
         [HttpPost]
         public async Task<ActionResult<Producto>> CreateProducto(Producto producto)
         {
-            _context.Productos.Add(producto);
-            await _context.SaveChangesAsync();
+            try
+            {
+                if (producto == null)
+                    return BadRequest("El producto no puede ser nulo");
 
-            return CreatedAtAction(nameof(GetProducto), new { id = producto.Id }, producto);
+                if (string.IsNullOrWhiteSpace(producto.Nombre))
+                    return BadRequest("El nombre del producto es obligatorio");
+
+                if (producto.Precio <= 0)
+                    return BadRequest("El precio debe ser mayor que 0");
+
+                _context.Productos.Add(producto);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetProducto), new { id = producto.Id }, producto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al crear el producto: {ex.Message}");
+            }
         }
 
-        // PUT: api/productos/
+        // PUT: api/productos/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProducto(int id, Producto producto)
         {
-            producto.Id = id;
-
-            _context.Entry(producto).State = EntityState.Modified;
-
             try
             {
+                if (producto == null)
+                    return BadRequest("El producto no puede ser nulo");
+
+                if (string.IsNullOrWhiteSpace(producto.Nombre))
+                    return BadRequest("El nombre del producto es obligatorio");
+
+                if (producto.Precio <= 0)
+                    return BadRequest("El precio debe ser mayor que 0");
+
+                // Se fuerza a usar el ID de la URL
+                producto.Id = id;
+
+                if (!await _context.Productos.AnyAsync(p => p.Id == id))
+                    return NotFound($"No existe un producto con Id {id}");
+
+                _context.Entry(producto).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
+
+                return NoContent();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Productos.Any(p => p.Id == id))
-                    return NotFound();
-                else
-                    throw;
+                return Conflict("Error de concurrencia al actualizar el producto");
             }
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al actualizar el producto: {ex.Message}");
+            }
         }
 
-        // DELETE: api/productos/
+        // DELETE: api/productos/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProducto(int id)
         {
-            var producto = await _context.Productos.FindAsync(id);
-            if (producto == null)
-                return NotFound();
+            try
+            {
+                var producto = await _context.Productos.FindAsync(id);
+                if (producto == null)
+                    return NotFound($"No se encontró un producto con Id {id}");
 
-            _context.Productos.Remove(producto);
-            await _context.SaveChangesAsync();
+                _context.Productos.Remove(producto);
+                await _context.SaveChangesAsync();
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error al eliminar el producto: {ex.Message}");
+            }
         }
     }
 }
