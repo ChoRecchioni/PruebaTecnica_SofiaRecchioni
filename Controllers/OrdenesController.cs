@@ -112,8 +112,7 @@ namespace PruebaTecnica_SofiaRecchioni.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateOrden(int id, Orden orden)
         {
-            if (id != orden.Id)
-                return BadRequest();
+            orden.Id = id;
 
             // Validar existencia de la orden
             var ordenExistente = await _context.Ordenes
