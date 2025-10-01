@@ -50,8 +50,7 @@ namespace PruebaTecnica_SofiaRecchioni.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProducto(int id, Producto producto)
         {
-            if (id != producto.Id)
-                return BadRequest();
+            producto.Id = id;
 
             _context.Entry(producto).State = EntityState.Modified;
 
